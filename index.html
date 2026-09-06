@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>運命の2択</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #080808;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  transition: background .3s;
+}
+
+h1 {
+  margin: 24px 0 4px;
+  font-size: 34px;
+}
+
+#sub {
+  color: #aaa;
+}
+
+#stats {
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+  margin: 16px 0;
+  font-size: 16px;
+}
+
+#best {
+  color: gold;
+}
+
+#stage {
+  font-size: 27px;
+  font-weight: bold;
+  margin: 14px;
+}
+
+#bar {
+  width: 85%;
+  max-width: 450px;
+  height: 11px;
+  margin: auto;
+  background: #333;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+#progress {
+  width: 10%;
+  height: 100%;
+  background: white;
+  transition: width .3s;
+}
+
+.doors {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 30px;
+}
+
+.door {
+  width: 145px;
+  height: 240px;
+  border: 5px solid #777;
+  border-radius: 20px 20px 7px 7px;
+  color: white;
+  font-size: 21px;
+  font-weight: bold;
+  box-shadow: 0 10px 25px #000;
+  transition: .2s;
+  touch-action: manipulation;
+}
+
+.left {
+  background: #1459b8;
+}
+
+.right {
+  background: #b51d1d;
+}
+
+.door:active {
+  transform: scale(.9);
+}
+
+#message {
+  height: 75px;
+  margin-top: 25px;
+  font-size: 27px;
+  font-weight: bold;
+}
+
+#result {
+  min-height: 30px;
+  color: #ccc;
+}
+
+/* 扉の揺れ */
+
+.shake1 {
+  animation: shake1 .6s infinite;
+}
+
+.shake2 {
+  animation: shake2 .4s infinite;
+}
+
+.shake3 {
+  animation: shake3 .22s infinite;
+}
+
+@keyframes shake1 {
+  0%,100% { transform: rotate(0); }
+  25% { transform: rotate(-2deg); }
+  75% { transform: rotate(2deg); }
+}
+
+@keyframes shake2 {
+  0%,100% { transform: rotate(0); }
+  25% { transform: rotate(-4deg); }
+  75% { transform: rotate(4deg); }
+}
+
+@keyframes shake3 {
+  0%,100% { transform: rotate(0); }
+  25% { transform: rotate(-7deg); }
+  75% { transform: rotate(7deg); }
+}
+
+/* 正解 */
+
+.success {
+  animation: success .7s;
+}
+
+@keyframes success {
+  0% { transform: scale(1); }
+  35% {
+    transform: scale(1.18) rotate(-5deg);
+    filter: brightness(2);
+  }
+  70% {
+    transform: scale(1.18) rotate(5deg);
+    filter: brightness(2);
+  }
+  100% { transform: scale(1); }
+}
+
+/* ハズレ */
+
+.gameover {
+  animation: gameover .5s;
+}
+
+@keyframes gameover {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-20px); }
+  40% { transform: translateX(20px); }
+  60% { transform: translateX(-20px); }
+  80% { transform: translateX(20px); }
+}
+
+/* 確定演出 */
+
+.specialDark {
+  animation: specialDark .5s;
+}
+
+@keyframes specialDark {
+  0% { background: #080808; }
+  50% { background: #000; }
+  100% { background: #080808; }
+}
+
+.goldDoor {
+  border-color: gold !important;
+  background: linear-gradient(
+    135deg,
+    #6b4b00,
+    #ffd700,
+    #8a6500
+  ) !important;
+
+  box-shadow:
+    0 0 15px gold,
+    0 0 35px gold,
+    0 0 70px gold !important;
+
+  animation: goldDoor .35s infinite alternate;
+}
+
+@keyframes goldDoor {
+  from {
+    transform: scale(1);
+    filter: brightness(1.2);
+  }
+
+  to {
+    transform: scale(1.08);
+    filter: brightness(2);
+  }
+}
+
+.specialText {
+  color: gold;
+  text-shadow:
+    0 0 10px gold,
+    0 0 25px gold;
+  animation: specialText .5s infinite alternate;
+}
+
+@keyframes specialText {
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(1.12);
+  }
+}
+
+/* クリア */
+
+.clear {
+  color: gold;
+  text-shadow:
+    0 0 10px gold,
+    0 0 30px gold;
+  animation: clear .6s infinite alternate;
+}
+
+@keyframes clear {
+  from { transform: scale(1); }
+  to { transform: scale(1.18); }
+}
+
+/* 紙吹雪 */
+
+.confetti {
+  position: fixed;
+  top: -30px;
+  font-size: 25px;
+  pointer-events: none;
+  animation: fall 2s linear forwards;
+  z-index: 100;
+}
+
+@keyframes fall {
+  to {
+    transform:
+      translateY(110vh)
+      rotate(720deg);
+  }
+}
+
+/* 特別エフェクト */
+
+.star {
+  position: fixed;
+  font-size: 30px;
+  pointer-events: none;
+  z-index: 99;
+  animation: star .9s forwards;
+}
+
+@keyframes star {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+
+  100% {
+    transform:
+      translate(
+        calc((var(--x) - 50) * 1vw),
+        calc((var(--y) - 50) * 1vh)
+      )
+      scale(1.5);
+    opacity: 0;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h1>🚪 運命の2択</h1>
+
+<div id="sub">
+運だけで10連勝しろ
+</div>
+
+<div id="stats">
+  <span>🏆 最高記録 <b id="best">0</b></span>
+  <span>📊 失敗 <b id="fails">0</b>回</span>
+</div>
+
+<div id="stage">
+STAGE 1 / 10
+</div>
+
+<div id="bar">
+  <div id="progress"></div>
+</div>
+
+<div class="doors">
+
+  <button class="door left" onclick="choose(0)">
+    🚪<br><br>
+    LEFT
+  </button>
+
+  <button class="door right" onclick="choose(1)">
+    🚪<br><br>
+    RIGHT
+  </button>
+
+</div>
+
+<div id="message">
+運命を選べ……
+</div>
+
+<div id="result"></div>
+
+<script>
+
+let stage = 1;
+let answer = 0;
+let playing = true;
+
+let best =
+  Number(localStorage.getItem("bestScore")) || 0;
+
+let fails =
+  Number(localStorage.getItem("failCount")) || 0;
+
+let specialActive = false;
+
+const body =
+  document.body;
+
+const left =
+  document.querySelector(".left");
+
+const right =
+  document.querySelector(".right");
+
+const message =
+  document.getElementById("message");
+
+const result =
+  document.getElementById("result");
+
+const stageText =
+  document.getElementById("stage");
+
+const progress =
+  document.getElementById("progress");
+
+function updateStats() {
+
+  document.getElementById("best").textContent =
+    best;
+
+  document.getElementById("fails").textContent =
+    fails;
+
+}
+
+function randomAnswer() {
+
+  answer =
+    Math.floor(Math.random() * 2);
+
+}
+
+function updateStage() {
+
+  stageText.textContent =
+    "STAGE " + stage + " / 10";
+
+  progress.style.width =
+    (stage * 10) + "%";
+
+}
+
+function shakeDoors() {
+
+  left.classList.remove(
+    "shake1",
+    "shake2",
+    "shake3"
+  );
+
+  right.classList.remove(
+    "shake1",
+    "shake2",
+    "shake3"
+  );
+
+  if (stage >= 8) {
+
+    left.classList.add("shake3");
+    right.classList.add("shake3");
+
+  } else if (stage >= 5) {
+
+    left.classList.add("shake2");
+    right.classList.add("shake2");
+
+  } else if (stage >= 3) {
+
+    left.classList.add("shake1");
+    right.classList.add("shake1");
+
+  }
+
+}
+
+function choose(choice) {
+
+  if (!playing || specialActive)
+    return;
+
+  /*
+    0.5%の確率で確定演出
+    約200回に1回
+  */
+
+  if (Math.random() < 0.005) {
+
+    specialActive = true;
+
+    specialAnimation(choice);
+
+    return;
+  }
+
+  if (choice === answer) {
+
+    correct(choice);
+
+  } else {
+
+    gameOver();
+
+  }
+
+}
+
+/* =========================
+   超低確率・確定演出
+========================= */
+
+function specialAnimation(choice) {
+
+  const selectedDoor =
+    choice === 0 ? left : right;
+
+  /*
+    ① 一瞬暗転
+  */
+
+  body.classList.add("specialDark");
+
+  message.textContent =
+    "……ん？";
+
+  result.textContent =
+    "何かがおかしい……";
+
+  if (navigator.vibrate) {
+    navigator.vibrate(100);
+  }
+
+  setTimeout(() => {
+
+    /*
+      ② 扉が金色に光る
+    */
+
+    selectedDoor.classList.add(
+      "goldDoor"
+    );
+
+    message.textContent =
+      "✨ 扉が光り始めた……";
+
+    result.textContent =
+      "⚠️ SPECIAL EVENT";
+
+    body.style.background =
+      "#241c00";
+
+    if (navigator.vibrate) {
+      navigator.vibrate([
+        100,
+        100,
+        200
+      ]);
+    }
+
+  }, 600);
+
+  setTimeout(() => {
+
+    /*
+      ③ 運命が動いた
+    */
+
+    message.textContent =
+      "👑 運命が動いた――";
+
+    message.classList.add(
+      "specialText"
+    );
+
+    result.textContent =
+      "✨ この扉には特別な力が宿っている";
+
+    createStars();
+
+  }, 1400);
+
+  setTimeout(() => {
+
+    /*
+      ④ 特別演出
+    */
+
+    message.textContent =
+      "🔥 確　定　演　出 🔥";
+
+    result.textContent =
+      "🎉 この扉は絶対に正解！！";
+
+    createConfetti(50);
+
+    if (navigator.vibrate) {
+      navigator.vibrate([
+        100,
+        80,
+        100,
+        80,
+        250
+      ]);
+    }
+
+  }, 2100);
+
+  setTimeout(() => {
+
+    /*
+      ⑤ 必ず正解
+    */
+
+    selectedDoor.classList.remove(
+      "goldDoor"
+    );
+
+    message.classList.remove(
+      "specialText"
+    );
+
+    body.classList.remove(
+      "specialDark"
+    );
+
+    body.style.background =
+      "#080808";
+
+    specialActive = false;
+
+    correct(choice);
+
+  }, 3200);
+
+}
+
+/* =========================
+   正解
+========================= */
+
+function correct(choice) {
+
+  if (!playing)
+    return;
+
+  const selectedDoor =
+    choice === 0 ? left : right;
+
+  selectedDoor.classList.add(
+    "success"
+  );
+
+  if (navigator.vibrate) {
+    navigator.vibrate(70);
+  }
+
+  message.textContent =
+    "🎉 PERFECT!! 🎉";
+
+  result.textContent =
+    "🔥 " + stage + "連続正解！";
+
+  createConfetti(20);
+
+  if (stage > best) {
+
+    best = stage;
+
+    localStorage.setItem(
+      "bestScore",
+      best
+    );
+
+  }
+
+  updateStats();
+
+  /*
+    10連続達成
+  */
+
+  if (stage === 10) {
+
+    setTimeout(() => {
+      clearGame();
+    }, 700);
+
+    return;
+  }
+
+  stage++;
+
+  setTimeout(() => {
+
+    selectedDoor.classList.remove(
+      "success"
+    );
+
+    message.textContent =
+      "🔥 NEXT STAGE!";
+
+    stageText.textContent =
+      "STAGE " + stage + " / 10";
+
+    updateStage();
+
+    randomAnswer();
+
+    shakeDoors();
+
+  }, 650);
+
+}
+
+/* =========================
+   ゲームオーバー
+========================= */
+
+function gameOver() {
+
+  playing = false;
+
+  fails++;
+
+  localStorage.setItem(
+    "failCount",
+    fails
+  );
+
+  updateStats();
+
+  body.classList.add(
+    "gameover"
+  );
+
+  body.style.background =
+    "#650000";
+
+  left.disabled = true;
+  right.disabled = true;
+
+  message.textContent =
+    "💥 ハズレ！！！";
+
+  result.textContent =
+    "📊 STAGE " + stage +
+    " で失敗……";
+
+  if (navigator.vibrate) {
+
+    navigator.vibrate([
+      120,
+      60,
+      120
+    ]);
+
+  }
+
+  setTimeout(() => {
+
+    body.classList.remove(
+      "gameover"
+    );
+
+    body.style.background =
+      "#080808";
+
+    message.textContent =
+      "💀 GAME OVER";
+
+    result.textContent =
+      "もう一度挑戦しよう";
+
+    createConfetti(8);
+
+    /*
+      画面をタップすると再スタート
+    */
+
+    document.body.onclick =
+      restart;
+
+  }, 700);
+
+}
+
+/* =========================
+   再スタート
+========================= */
+
+function restart() {
+
+  document.body.onclick = null;
+
+  stage = 1;
+  playing = true;
+  specialActive = false;
+
+  body.className = "";
+  body.style.background =
+    "#080808";
+
+  message.classList.remove(
+    "clear",
+    "specialText"
+  );
+
+  message.textContent =
+    "運命を選べ……";
+
+  result.textContent =
+    "";
+
+  left.disabled = false;
+  right.disabled = false;
+
+  left.className =
+    "door left";
+
+  right.className =
+    "door right";
+
+  updateStage();
+  randomAnswer();
+  shakeDoors();
+
+}
+
+/* =========================
+   クリア
+========================= */
+
+function clearGame() {
+
+  playing = false;
+
+  left.disabled = true;
+  right.disabled = true;
+
+  body.style.background =
+    "#241e00";
+
+  stageText.textContent =
+    "👑 COMPLETE 👑";
+
+  progress.style.width =
+    "100%";
+
+  message.textContent =
+    "🎉🎉🎉 CLEAR!!! 🎉🎉🎉";
+
+  message.classList.add(
+    "clear"
+  );
+
+  result.textContent =
+    "🏆 10回連続正解！！";
+
+  createConfetti(120);
+
+  createStars();
+
+  if (navigator.vibrate) {
+
+    navigator.vibrate([
+      100,
+      80,
+      100,
+      80,
+      300
+    ]);
+
+  }
+
+  /*
+    タップで再スタート
+  */
+
+  document.body.onclick =
+    restart;
+
+}
+
+/* =========================
+   紙吹雪
+========================= */
+
+function createConfetti(amount) {
+
+  const emojis = [
+    "🎉",
+    "✨",
+    "🎊",
+    "⭐",
+    "🔥",
+    "🏆",
+    "💥"
+  ];
+
+  for (let i = 0; i < amount; i++) {
+
+    const item =
+      document.createElement("div");
+
+    item.className =
+      "confetti";
+
+    item.textContent =
+      emojis[
+        Math.floor(
+          Math.random() *
+          emojis.length
+        )
+      ];
+
+    item.style.left =
+      Math.random() * 100 + "vw";
+
+    item.style.animationDelay =
+      Math.random() * .8 + "s";
+
+    document.body.appendChild(item);
+
+    setTimeout(() => {
+      item.remove();
+    }, 3000);
+
+  }
+
+}
+
+/* =========================
+   星エフェクト
+========================= */
+
+function createStars() {
+
+  for (let i = 0; i < 35; i++) {
+
+    const star =
+      document.createElement("div");
+
+    star.className =
+      "star";
+
+    star.textContent =
+      Math.random() > .5
+        ? "✨"
+        : "⭐";
+
+    star.style.left =
+      "50%";
+
+    star.style.top =
+      "50%";
+
+    star.style.setProperty(
+      "--x",
+      (Math.random() * 160 - 80)
+    );
+
+    star.style.setProperty(
+      "--y",
+      (Math.random() * 160 - 80)
+    );
+
+    document.body.appendChild(star);
+
+    setTimeout(() => {
+      star.remove();
+    }, 1000);
+
+  }
+
+}
+
+/* =========================
+   ゲーム開始
+========================= */
+
+updateStats();
+updateStage();
+randomAnswer();
+shakeDoors();
+
+</script>
+
+</body>
+</html>
